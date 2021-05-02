@@ -33,5 +33,4 @@ main.o: main.cpp networkManager.hpp
 clean:
 	rm *.o
 	rm *.out
-	rm system_pipe_*
-	rm switch_pipe_*
+	rm *.pipe
