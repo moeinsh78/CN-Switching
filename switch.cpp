@@ -32,10 +32,11 @@ int main(int argc, char **argv) {
     int switch_number = stoi(switch_num);
     int number_of_ports = stoi(ports_num);
     cout << "New switch process created -- Num: " << switch_number << "\nPorts: " << number_of_ports << "\n";
-    string manager_pipe = "./manager_system_" + switch_num;
+    string manager_pipe = "./manager_switch_" + switch_num + ".pipe";
     pipe_file_names.push_back(manager_pipe);
     while (1) {
         for (int i = 0; i < pipe_file_names.size(); i++) {
+            //cout<<"switch searching for files" << endl;
             string message = read_message_from_pipe(pipe_file_names[i]);
             if (message.length() < 1) 
                 continue;
@@ -73,6 +74,6 @@ string read_message_from_pipe(string pipe_file_name) {
     string message(msg);
      
     // pak kardane buffere pipeeeeeee????????
-    
+    close(pipe);
     return message;
 }

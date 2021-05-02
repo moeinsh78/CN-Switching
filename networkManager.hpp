@@ -33,16 +33,17 @@ class NetworkManager
 public:
     NetworkManager();
     void execute_command(std::string);
-    void create_switch(int number_of_ports, int switch_number);
+    void create_switch(int switch_num, int num_of_ports);
     void create_system(int system_num);
     void connect(int system_number, int switch_number, int port);
-    void connect_switches(int port1, int switch1, int port2, int switch2);
+    void connect_switches(int switch1, int port1, int switch2, int port2);
+    void write_on_pipe(std::string system_pipe, std::string message);
     void send(std::string file_path, int source, int destination);
 
 private:
     std::vector<Switch> switches;    
     std::vector<System> systems;
-    std::vector<std::vector<int>> switch_connections;
+    std::vector<std::vector<int> > switch_connections;
 };
 
 #endif

@@ -27,7 +27,7 @@ int main(int argc, char **argv) {
     string system_num(argv[1]);
     // int system_number = stoi(system_num);
     cout << "New system process created -- Num: " << system_num << "\n";
-    string manager_pipe = "./manager_system_" + system_num;
+    string manager_pipe = "./manager_system_" + system_num + ".pipe";
     pipe_file_names.push_back(manager_pipe);
     while (1) {
         usleep(1000);
@@ -73,6 +73,6 @@ string read_message_from_pipe(string pipe_file_name) {
     string message(msg);
      
     // pak kardane buffere pipeeeeeee????????
-    
+    close(pipe);
     return message;
 }
