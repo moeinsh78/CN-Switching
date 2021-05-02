@@ -30,11 +30,15 @@ int main(int argc, char **argv) {
     string manager_pipe = "./manager_system_" + system_num;
     pipe_file_names.push_back(manager_pipe);
     while (1) {
+        usleep(1000);
         for (int i = 0; i < pipe_file_names.size(); i++) {
             string message = read_message_from_pipe(pipe_file_names[i]);
-            if (message.length() < 1) 
+            // cout << message.length() << "\n";
+            if (message.length() < 10) 
                 continue;
-            else if (pipe_file_names[i] == manager_pipe) {
+            // else if (pipe_file_names[i] == manager_pipe) {
+            cout << "Message in system was : " << message << "\n";
+            if (pipe_file_names[i] == manager_pipe) {
                 stringstream s_stream(message);
                 istream_iterator <string> begin(s_stream);
                 istream_iterator <string> end;
@@ -52,8 +56,7 @@ int main(int argc, char **argv) {
                 // inja frame az pipe e system ba switch khunde mishe
                 // dar asl "message" hamun frame emun mishe
             }
-
-            sleep(0.001);
+            usleep(1000);
         
         }
     }

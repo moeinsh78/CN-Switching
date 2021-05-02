@@ -35,24 +35,28 @@ void NetworkManager::execute_command(string command) {
 
 void NetworkManager::connect(int system_number, int switch_number, int port_num) {
     // Informing system that will be connected to the mentioned switch
-    string temp = "./manager_system_" + to_string(system_number);
+    string temp = "./manager_system_" + to_string(system_number) + ".pipe";
     char* system_pipe = new char[temp.length()];
+    strcpy(system_pipe, temp.c_str());
     string system_reading_pipe = "./switch_" + to_string(switch_number) + "_port_" + to_string(port_num) + ".pipe";
     string msg = "CONNECTED_TO_SWITCH " + system_reading_pipe;
     char* message = new char[msg.length()];
     strcpy(message, msg.c_str());
+    cout << "Message to " << system_pipe << " : " << message << "\n";
     int _sys = open(system_pipe, O_WRONLY);
     write(_sys, message, strlen(message) + 1);
     close(_sys);
 
     // Informing switch that will be connected to the mentioned system
-    temp = "./manager_switch_" + to_string(switch_number);
+    temp = "./manager_switch_" + to_string(switch_number) + ".pipe";
     char* switch_pipe = new char[temp.length()];
+    strcpy(switch_pipe, temp.c_str());
     string switch_reading_pipe = "./system_" + to_string(system_number) + "_switch_" + to_string(switch_number) + "_port_" + to_string(port_num) + ".pipe";
     string msg2 = "CONNECTED_TO_SYSTEM " + switch_reading_pipe;
     char* message2 = new char[msg2.length()];
     strcpy(message2,msg2.c_str());
-    int _switch = open(switch_pipe,O_WRONLY);
+    int _switch = open(switch_pipe, O_WRONLY);
+    cout << "Message to " << switch_pipe << " : " << message2 << "\n";
     write(_switch, message2, strlen(message2) + 1);
     close(_switch); 
 
@@ -60,19 +64,21 @@ void NetworkManager::connect(int system_number, int switch_number, int port_num)
 
 void NetworkManager::connect_switches(int port1, int switch1, int port2, int switch2) {
     // Informing first switch that will be connected to the second switch
-    string temp = "./manager_switch_" + to_string(switch1);
+    string temp = "./manager_switch_" + to_string(switch1) + ".pipe";
     char* switch_pipe = new char[temp.length()];
+    strcpy(switch_pipe, temp.c_str());
     string first_switch_reading_pipe = "./switch_" + to_string(switch2) + "_port_" + to_string(port2) + ".pipe";
     string msg = "CONNECTED_TO_SWITCH " + to_string(switch2) + " WITH PORT " + to_string(port1);
     char* message = new char[msg.length()];
-    strcpy(message,msg.c_str());
+    strcpy(message, msg.c_str());
     int _switch = open(switch_pipe,O_WRONLY);
     write(_switch, message, strlen(message) + 1);
     close(_switch);
 
     // Informing second switch that will be connected to the first switch
-    string temp2 = "./manager_switch_" + to_string(switch2);
+    string temp2 = "./manager_switch_" + to_string(switch2) + ".pipe";
     char* switch_pipe2 = new char[temp2.length()];
+    strcpy(switch_pipe2, temp2.c_str());
     string second_switch_reading_pipe = "./switch_" + to_string(switch1) + "_port_" + to_string(port1) + ".pipe";
     string msg2 = "CONNECTED_TO_SWITCH " + second_switch_reading_pipe;
     char* message2 = new char[msg2.length()];
@@ -104,12 +110,12 @@ void NetworkManager::create_switch(int num_of_ports, int switch_num) {
     mkfifo(named_pipe_path, 0666);
 
     //each port has a pipe named switch_id_port_id
-    for(int i = 0 ; i < num_of_ports ; i++) {
-        string new_pipe = "./switch_" + to_string(switch_num) + "_port_" + to_string(i + 1) + ".pipe";
-        char* named_pipe_path = new char[new_pipe.length() + 1];
-        strcpy(named_pipe_path, new_pipe.c_str());
-        mkfifo(named_pipe_path, 0666);
-    }
+    // for(int i = 0 ; i < num_of_ports ; i++) {
+    //     string new_pipe = "./switch_" + to_string(switch_num) + "_port_" + to_string(i + 1) + ".pipe";
+    //     char* named_pipe_path = new char[new_pipe.length() + 1];
+    //     strcpy(named_pipe_path, new_pipe.c_str());
+    //     mkfifo(named_pipe_path, 0666);
+    // }
 
     new_switch_info.number_of_ports = num_of_ports;
     new_switch_info.switch_number = switch_num;
@@ -131,12 +137,12 @@ void NetworkManager::create_switch(int num_of_ports, int switch_num) {
         char *switch_num_ = new char[switch_num_str.length() + 1];
         strcpy(switch_num_, switch_num_str.c_str());
         
-        argv[0] = (char*) "./switch";
+        argv[0] = (char*) "./switch.out";
         argv[1] = switch_num_;
         argv[2] = port_num_;
         argv[3] = NULL;
         
-        execv("./switch", argv);
+        execv("./switch.out", argv);
         exit(0);
     }
     else if(switch_pid > 0) {
@@ -172,11 +178,10 @@ void NetworkManager::create_system(int system_num) {
         char *system_num_ = new char[system_num_str.length() + 1];
         strcpy(system_num_, system_num_str.c_str());
         
-        argv[0] = (char*) "./system";
+        argv[0] = (char*) "./system.out";
         argv[1] = system_num_;
         argv[2] = NULL;
-        
-        execv("./system", argv);
+        execv("./system.out", argv);
         exit(0);
     }
     else if(system_pid > 0) {

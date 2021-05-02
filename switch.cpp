@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
                 // dar asl "message" hamun frame emun mishe
             }
 
-            sleep(0.001);
+            sleep((float) 0.001);
         }
     }
     return 0;
