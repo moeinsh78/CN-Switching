@@ -22,9 +22,9 @@ void NetworkManager::execute_command(string command) {
     else if (command_tokens[0] == "Connect") {
         connect(stoi(command_tokens[1]), stoi(command_tokens[2]), stoi(command_tokens[3]))
     }
-    else if(command_tokens[0] == ConnectSwitches) {
+    else if(command_tokens[0] == "ConnectSwitches") {
         //port swtich to port switch 
-        connec_switches(stoi(command_tokens[1]), stoi(command_tokens[2]), stoi(command_tokens[3]), stoi(command_tokens[4]));
+        connect_switches(stoi(command_tokens[1]), stoi(command_tokens[2]), stoi(command_tokens[3]), stoi(command_tokens[4]));
     }
     else if (command_tokens[0] == "Send") {
         send(command_tokens[1], stoi(command_tokens[2]), stoi(command_tokens[3]));
@@ -40,19 +40,21 @@ void NetworkManager::connect(int system_number, int switch_number, int port_num)
     strcpy(named_pipe_path, new_pipe.c_str());
     mkfifo(named_pipe_path, 0666);
 
-    string system_pipe = "./manager_system_" + to_string(system_number);
-    string msg = "CONNECTED TO" + to_string(switch_number) + "WITH PORT" + to_string(port_num);
+    string temp = "./manager_system_" + to_string(system_number);
+    char* system_pipe = new char[temp.length()];
+    string msg = "CONNECTED TO SWITCH " + to_string(switch_number) + " WITH PORT " + to_string(port_num);
     char* message = new char[msg.length()];
     strcpy(message,msg.c_str());
-    _sys = open(system_pipe,O_WRONLY);
+    int _sys = open(system_pipe,O_WRONLY);
     write(_sys, message, strlen(message)+1);
     close(_sys);    
 
-    string switch_pipe = "./manager_switch_" + to_string(switch_number);
-    string msg2 = "CONNECTED TO" + to_string(system_number) + "WITH PORT" + to_string(port_num);
+    string temp = "./manager_switch_" + to_string(switch_number);
+    char* switch_pipe = new char[temp.length()];
+    string msg2 = "CONNECTED TO SYSTEM " + to_string(system_number) + " WITH PORT " + to_string(port_num);
     char* message2 = new char[msg2.length()];
     strcpy(message2,msg2.c_str());
-    _switch = open(switch_pipe,O_WRONLY);
+    int _switch = open(switch_pipe,O_WRONLY);
     write(_switch, message2, strlen(message2)+1);
     close(_switch); 
 
@@ -62,33 +64,37 @@ void NetworkManager::connect_switches(int port1, int switch1, int port2, int swi
     string old_name_2 = "./switch_" + to_string(switch2) + "_port_" + to_string(port2);
 	string new_name_1 = "./swtich_" + to_string(switch1) + "_port_" + to_string(port1) + "_switch_" + to_string(switch2) + "_port_" + to_string(port2);
     string new_name_2 = "./swtich_" + to_string(switch2) + "_port_" + to_string(port2) + "_switch_" + to_string(switch1) + "_port_" + to_string(port1);
-	
-	rename(old_name_1, new_name_1);
-    rename(old_name_2, new_name_2);
 
-    string switch_pipe = "./manager_switch_" + to_string(switch1);
-    string msg = "CONNECTED TO" + to_string(switch2) + "WITH PORT" + to_string(port1);
+
+	rename((char*) old_name_1.c_str(), (char*) new_name_1.c_str());
+    rename((char*) old_name_2.c_str(), (char*) new_name_2.c_str());
+
+    string temp = "./manager_switch_" + to_string(switch1);
+    char* switch_pipe = new char[temp.length()];
+    string msg = "CONNECTED TO SWITCH " + to_string(switch2) + " WITH PORT " + to_string(port1);
     char* message = new char[msg.length()];
     strcpy(message,msg.c_str());
-    _switch = open(switch_pipe,O_WRONLY);
+    int _switch = open(switch_pipe,O_WRONLY);
     write(_switch, message, strlen(message)+1);
     close(_switch);
 
-    string switch_pipe2 = "./manager_switch_" + to_string(switch2);
-    string msg2 = "CONNECTED TO" + to_string(switch1) + "WITH PORT" + to_string(port2);
+    string temp2 = "./manager_switch_" + to_string(switch2);
+    char* switch_pipe2 = new char[temp2.length()];
+    string msg2 = "CONNECTED TO SWITCH " + to_string(switch1) + " WITH PORT " + to_string(port2);
     char* message2 = new char[msg2.length()];
     strcpy(message2,msg2.c_str());
-    _switch = open(switch_pipe2,O_WRONLY);
+    int _switch = open(switch_pipe2,O_WRONLY);
     write(_switch, message2, strlen(message2)+1);
     close(_switch); 
 	
 }
 void NetworkManager::send(string file_path, int source, int destination) {
-    string source_pipe = "./manager_system_" + to_string(source);
+    string temp = "./manager_system_" + to_string(source);
+    char* source_pipe = new char[temp.length()];
     string msg = "SEND " + file_path + " TO " + to_string(destination);
     char* message = new char[msg.length()];
     strcpy(message,msg.c_str());
-    named_pipe = open(source_pipe,O_WRONLY);
+    int named_pipe = open(source_pipe,O_WRONLY);
     write(named_pipe, message, strlen(message)+1);
     close(named_pipe);
 }
@@ -136,7 +142,6 @@ void NetworkManager::create_switch(int num_of_ports, int switch_num) {
         
         execv("./switch", argv);
         exit(0);
-
     }
     else if(switch_pid > 0) {
         // inja bayad ettelaat ro az named pipe e switch bekhunimo estefade konim
