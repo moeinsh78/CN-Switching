@@ -35,9 +35,14 @@ public:
     void execute_command(std::string);
     void create_switch(int number_of_ports, int switch_number);
     void create_system(int system_num);
+    void connect(int system_number, int switch_number, int port);
+    void connect_switches(int port1, int switch1, int port2, int switch2);
+    void send(string file_path, int source, int destination);
+
 private:
     std::vector<Switch> switches;    
     std::vector<System> systems;
+    std::vector<std::vector<int>> switch_connections;
 };
 
 #endif
