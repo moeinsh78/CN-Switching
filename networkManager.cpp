@@ -1,5 +1,4 @@
 #include "networkManager.hpp"
-
 using namespace std;
 
 NetworkManager::NetworkManager()
@@ -27,16 +26,18 @@ void NetworkManager::execute_command(string command) {
         connect_switches(stoi(command_tokens[1]), stoi(command_tokens[2]), stoi(command_tokens[3]), stoi(command_tokens[4]));
     }
     else if (command_tokens[0] == "send") {
-        send(command_tokens[1], stoi(command_tokens[2]), stoi(command_tokens[3]));
+        //file , source,destination
+        send(command_tokens[1], command_tokens[2], command_tokens[3]);
     }
     // else if (command_tokens[0] == "Receive")    
     return;
 }
 void NetworkManager::write_on_pipe(string pipe, string message) {
-    int fd = open(pipe.c_str(), O_WRONLY);
+    int fd = open(pipe.c_str(), O_TRUNC | O_WRONLY );
     write(fd, message.c_str(), message.size()+ 1);
     close(fd);
 }
+
 void NetworkManager::connect(int system_number, int switch_number, int port_num) {
     // Informing system that will be connected to the mentioned switch
     string system_pipe = "./manager_system_" + to_string(system_number) + ".pipe";
@@ -67,19 +68,14 @@ void NetworkManager::connect_switches(int switch1, int port1, int switch2, int p
     string second_switch_reading_pipe = "./switch_" + to_string(switch1) + "_port_" + to_string(port1) + ".pipe";
     string message2 = "CONNECTED_TO_SWITCH " + second_switch_reading_pipe;
     write_on_pipe(switch_pipe2,message2);
-    cout << "Message to " << switch_pipe << " : " << message2 << "\n";
+    cout << "Message to " << switch_pipe2 << " : " << message2 << "\n";
 	return;
 }
 
-void NetworkManager::send(string file_path, int source, int destination) {
-    string temp = "./manager_system_" + to_string(source);
-    char* source_pipe = new char[temp.length()];
-    string msg = "SEND " + file_path + " TO " + to_string(destination);
-    char* message = new char[msg.length()];
-    strcpy(message,msg.c_str());
-    int named_pipe = open(source_pipe,O_WRONLY);
-    write(named_pipe, message, strlen(message)+1);
-    close(named_pipe);
+void NetworkManager::send(string file_path, string source, string destination) {
+    string source_pipe = "./manager_system_" + source;
+    string message = "SEND " + file_path  + " " + destination;
+    write_on_pipe(source_pipe,message);
     return;
 }
 

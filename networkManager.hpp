@@ -27,7 +27,6 @@ typedef struct
     std::string pipe_path;
 } System;
 
-
 class NetworkManager 
 {
 public:
@@ -38,7 +37,7 @@ public:
     void connect(int system_number, int switch_number, int port);
     void connect_switches(int switch1, int port1, int switch2, int port2);
     void write_on_pipe(std::string system_pipe, std::string message);
-    void send(std::string file_path, int source, int destination);
+    void send(std::string file_path, std::string source, std::string destination);
 
 private:
     std::vector<Switch> switches;    
