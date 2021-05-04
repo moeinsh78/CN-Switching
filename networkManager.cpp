@@ -73,9 +73,10 @@ void NetworkManager::connect_switches(int switch1, int port1, int switch2, int p
 }
 
 void NetworkManager::send(string file_path, string source, string destination) {
-    string source_pipe = "./manager_system_" + source;
+    string source_pipe = "./manager_system_" + source + ".pipe";
     string message = "SEND " + file_path  + " " + destination;
-    write_on_pipe(source_pipe,message);
+    write_on_pipe(source_pipe, message);
+    cout << "Message to " << source_pipe << " : " << message << "\n";
     return;
 }
 
