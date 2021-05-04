@@ -26,7 +26,6 @@ string read_message_from_pipe(int pipe) {
 }
 void write_on_pipe(string pipe, string message) {
     int fd = open(pipe.c_str(), O_TRUNC | O_WRONLY );
-    cout << "switch wrote on: " << pipe << endl;
     write(fd, message.c_str(), message.size()+ 1);
     close(fd);
 }
@@ -44,8 +43,9 @@ int search_LUT(vector < vector<int> > LUT, string system) {
     return -1;
 }
 
-void broadcast(string message, string switch_num, int ports_num) {
+void broadcast(string message, string switch_num, int ports_num, int source_port) {
     for(int i = 0; i < ports_num; i++) {
+        if(source_port == i+1) continue;
         string pipe = "./switch_" + switch_num + "_port_" + to_string(i+1) + ".pipe";
         write_on_pipe(pipe, message);
     }
@@ -75,6 +75,7 @@ int main(int argc, char **argv) {
     tv.tv_usec = 0;
 
     fd_set rfds;
+    int lut_ind = 0;
 
     while (1) {
         vector<string> new_files;
@@ -105,14 +106,12 @@ int main(int argc, char **argv) {
                 }
             }
             else if(FD_ISSET(fd, &rfds)) {
-                sleep(2);
                 message = read_message_from_pipe(fd);
                 vector <string> frame = tokenize(message);
                 string destination = frame[1];
                 string source = frame[0];
                 int port = search_LUT(LUT, destination);
-                cout << "frame is: " << message << endl;
-                cout << "port is: " << port << endl;
+                int source_port;
                 if(search_LUT(LUT,source) == -1) {
                     vector <string> tokens;
                     stringstream check1(reading_list[i]);
@@ -121,23 +120,26 @@ int main(int argc, char **argv) {
                     {
                         tokens.push_back(intermediate);
                     }
-                    vector<int> row;
-                    row.push_back(stoi(source));
+                    
+                    LUT[lut_ind][0] = stoi(source);
                     if(tokens[0] == "./system") {
-                        row.push_back(stoi(tokens[5]));
+                        LUT[lut_ind][1] = stoi(tokens[5]);
+                        source_port = stoi(tokens[5]);
                     }
                     else{
-                        row.push_back(stoi(tokens[3]));
+                        LUT[lut_ind][1] = stoi(tokens[3]);
+                        source_port = stoi(tokens[3]);
                     }
-                    LUT.push_back(row);
-                    cout << "learning, system: " << row[0] << " from port: " << row[1] << endl;
+                    cout << "learning, system: " << LUT[lut_ind][0] << " from port: " << LUT[lut_ind][1] << endl;
                 }
                 if(port == -1) {
-                    broadcast(message, switch_num, stoi(ports_num));
+                    broadcast(message, switch_num, stoi(ports_num), source_port);
+                    cout << "switch " << switch_num << " broadcasted the frame!" << endl;
                 }
                 else {
                     string sending_pipe = "./switch_" + to_string(switch_number) + "_port_" + to_string(port) + ".pipe";
                     write_on_pipe(sending_pipe, message);
+                    cout << "switch "<< switch_num << "sent the frame to the system " << destination << " with port " << port; 
                 }
 
             }

@@ -38,24 +38,22 @@ vector<string> make_frames(string file, string source, string destination) {
         frame = source + " " + destination + " ";
         if(msg.size() <= 50) { 
             frame+=msg;
+            frame += " 1";
             frames.push_back(frame);
             return frames;
         }
         for(string::size_type i = 0; i < 50; ++i) {
             frame += msg[i];
         }
+        frame += " 0";
         frames.push_back(frame);
         msg.erase(0,50);
     }
 }
 void write_on_pipe(string pipe, string message) {
     int fd = open(pipe.c_str(), O_TRUNC | O_WRONLY );
-    cout << "open " << pipe << endl;
-    cout << "msg is: " << message << endl;
     write(fd, message.c_str(), message.size()+ 1);
-    cout << "message wrote" << endl;
     close(fd);
-    cout << "file closed" << endl;
     return;
 }
 int main(int argc, char **argv) {
@@ -75,13 +73,15 @@ int main(int argc, char **argv) {
 
     fd_set rfds;
     int max_fd;
+    int output_num = 1;
     while (1) {
         FD_ZERO(&rfds);
+        int switch_p;
         int manager = open(manager_pipe.c_str(), O_RDONLY | O_NONBLOCK);
         FD_SET(manager, &rfds);
         max_fd = manager;
         if(switch_reading_pipe != "") {
-            int switch_p = open(switch_reading_pipe.c_str(), O_RDONLY | O_NONBLOCK);
+            switch_p = open(switch_reading_pipe.c_str(), O_RDONLY | O_NONBLOCK);
             FD_SET(switch_p, &rfds);
             max_fd = switch_p;
         }
@@ -107,10 +107,33 @@ int main(int argc, char **argv) {
                 vector<string> frames = make_frames(file, system_num, destination);
                 for(int i = 0; i < frames.size(); i++) {
                     write_on_pipe(switch_writing_pipe,frames[i]);
-                    cout << "frame " << i << " wrote on " << switch_writing_pipe << endl;
                     sleep(2);
                 }
+                cout << "system " << system_num << " sent all the frames to system " << destination << endl;
             }
+        }
+        else if(FD_ISSET(switch_p, &rfds)) {
+            string message = read_message_from_pipe(switch_p);
+            char source = message[0];
+            string file_name = "./system_"+ system_num + "_output_" + to_string(output_num) + ".txt";
+            fstream output;
+            if(message[message.size() - 1] == '1') {
+                output.open(file_name,ios::app);
+                message.erase(0,4);
+                message.erase(message.size() - 2,2);
+                output.write((char*) message.c_str(),message.size());
+                output.close();
+                cout << "system " << system_num << " recieved all the frames from system " << source << endl;
+                output_num++;
+            }
+            if(message[message.size() - 1] == '0') {
+                output.open(file_name,ios::app);
+                message.erase(0,4);
+                message.erase(message.size() - 2,2);
+                output.write((char*) message.c_str(),message.size());
+                output.close();
+            }
+
         }
         close(manager);
     }
