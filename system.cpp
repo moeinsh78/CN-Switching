@@ -107,7 +107,7 @@ int main(int argc, char **argv) {
                 vector<string> frames = make_frames(file, system_num, destination);
                 for(int i = 0; i < frames.size(); i++) {
                     write_on_pipe(switch_writing_pipe,frames[i]);
-                    cout << "frame " << i << "wrote on " << switch_writing_pipe << endl;
+                    cout << "frame " << i << " wrote on " << switch_writing_pipe << endl;
                     sleep(2);
                 }
             }

@@ -38,11 +38,15 @@ public:
     void connect_switches(int switch1, int port1, int switch2, int port2);
     void write_on_pipe(std::string system_pipe, std::string message);
     void send(std::string file_path, std::string source, std::string destination);
-
+    int find_switch(int switch_num);
+    bool find_system(int system_num);
+    bool check_arguments_num(int vector_size, int correct_num);
+    bool check_port_availability(int switch_num, int port_num);
 private:
     std::vector<Switch> switches;    
     std::vector<System> systems;
-    std::vector<std::vector<int> > switch_connections;
+    // std::vector< std::vector<int> > switch_connections;
+    std::vector< std::vector<int> > connected_ports;
 };
 
 #endif
