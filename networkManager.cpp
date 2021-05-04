@@ -151,7 +151,7 @@ void NetworkManager::execute_command(string command) {
         send(command_tokens[1], command_tokens[2], command_tokens[3]);
     }
     else if (command_tokens[0] == "receive") {
-
+        receive(command_tokens[1], command_tokens[2], command_tokens[3]);
     }
     else {
         cout << "Command not found!\n";
@@ -191,14 +191,14 @@ void NetworkManager::connect_switches(int switch1, int port1, int switch2, int p
     // Informing first switch that will be connected to the second switch
     string switch_pipe = "./manager_switch_" + to_string(switch1) + ".pipe";
     string first_switch_reading_pipe = "./switch_" + to_string(switch2) + "_port_" + to_string(port2) + ".pipe";
-    string message = "CONNECTED_TO_SWITCH " + first_switch_reading_pipe;
+    string message = "CONNECTED_TO_SWITCH " + first_switch_reading_pipe + " WRITE_ON_PORT " + to_string(port1);
     write_on_pipe(switch_pipe, message);
     cout << "Message to " << switch_pipe << " : " << message << "\n";
 
     // Informing second switch that will be connected to the first switch
     string switch_pipe2 = "./manager_switch_" + to_string(switch2) + ".pipe";
     string second_switch_reading_pipe = "./switch_" + to_string(switch1) + "_port_" + to_string(port1) + ".pipe";
-    string message2 = "CONNECTED_TO_SWITCH " + second_switch_reading_pipe;
+    string message2 = "CONNECTED_TO_SWITCH " + second_switch_reading_pipe + " WRITE_ON_PORT " + to_string(port2);
     write_on_pipe(switch_pipe2,message2);
     cout << "Message to " << switch_pipe2 << " : " << message2 << "\n";
     vector<int> first_busy_port = {switch1, port1};
@@ -216,6 +216,14 @@ void NetworkManager::send(string file_path, string source, string destination) {
     return;
 }
 
+void NetworkManager::receive(string destination, string file, string source) {
+    string source_pipe = "./manager_system_" + destination + ".pipe";
+    string message = "RECIEVE " + file  + " " + source;
+    write_on_pipe(source_pipe, message);
+    cout << "Message to " << source_pipe << " : " << message << "\n";
+    return;
+
+}
 void NetworkManager::create_switch(int switch_num, int num_of_ports) {
     Switch new_switch_info = Switch();
 

@@ -42,7 +42,12 @@ int search_LUT(vector < vector<int> > LUT, string system) {
     }
     return -1;
 }
-
+string search_writings(vector < vector<string> > writing_list, string switch_num) {
+    for(int i = 0; i < writing_list.size(); i++) {
+        if(writing_list[i][0] == switch_num) return writing_list[i][1];
+    }
+    return "";
+}
 void broadcast(string message, string switch_num, int ports_num, int source_port) {
     for(int i = 0; i < ports_num; i++) {
         if(source_port == i+1) continue;
@@ -52,7 +57,7 @@ void broadcast(string message, string switch_num, int ports_num, int source_port
 }
 int main(int argc, char **argv) {
     vector<string> reading_list;
-    vector<char> writing_list;
+    vector<vector<string> > writing_list;
     string switch_num(argv[1]);
     string ports_num(argv[2]);
     vector < vector<int> > LUT;
@@ -95,53 +100,73 @@ int main(int argc, char **argv) {
         }
         for (int i = 0; i < open_files.size(); i++) {
             int fd = open_files[i];
-            if(FD_ISSET(fd, &rfds) && reading_list[i] == manager_pipe) {
-                message = read_message_from_pipe(fd);
-                vector <string> command_tokens = tokenize(message);
-                if (command_tokens[0] == "CONNECTED_TO_SWITCH" || command_tokens[0] == "CONNECTED_TO_SYSTEM") {
-                    string reading_pipe_name = command_tokens[1];
-                    mkfifo(reading_pipe_name.c_str(), 0666);
-                    new_files.push_back(reading_pipe_name);
-                    cout << "Pipe created with name: " << reading_pipe_name << endl;
-                }
-            }
-            else if(FD_ISSET(fd, &rfds)) {
-                message = read_message_from_pipe(fd);
-                vector <string> frame = tokenize(message);
-                string destination = frame[1];
-                string source = frame[0];
-                int port = search_LUT(LUT, destination);
-                int source_port;
-                if(search_LUT(LUT,source) == -1) {
-                    vector <string> tokens;
-                    stringstream check1(reading_list[i]);
-                    string intermediate;
-                    while(getline(check1, intermediate, '_'))
-                    {
-                        tokens.push_back(intermediate);
+            if(FD_ISSET(fd, &rfds)){
+                if(reading_list[i] == manager_pipe) { 
+                    message = read_message_from_pipe(fd);
+                    vector <string> command_tokens = tokenize(message);
+                    if (command_tokens[0] == "CONNECTED_TO_SYSTEM") {
+                        string reading_pipe_name = command_tokens[1];
+                        mkfifo(reading_pipe_name.c_str(), 0666);
+                        new_files.push_back(reading_pipe_name);
+                        cout << "Pipe created with name: " << reading_pipe_name << endl;
                     }
-                    
-                    LUT[lut_ind][0] = stoi(source);
-                    if(tokens[0] == "./system") {
-                        LUT[lut_ind][1] = stoi(tokens[5]);
-                        source_port = stoi(tokens[5]);
+                    if (command_tokens[0] == "CONNECTED_TO_SWITCH") {
+                        string reading_pipe_name = command_tokens[1];
+                        mkfifo(reading_pipe_name.c_str(), 0666);
+                        new_files.push_back(reading_pipe_name);
+                        vector <string> tokens;
+                        stringstream check(reading_pipe_name);
+                        string ss;
+                        while(getline(check, ss, '_'))
+                        {
+                            tokens.push_back(ss);
+                        }
+                        vector<string> row;
+                        row.push_back(tokens[1]);
+                        row.push_back(command_tokens[3]);
+                        writing_list.push_back(row);
+                        cout << "Pipe created with name: " << reading_pipe_name << endl;
                     }
-                    else{
-                        LUT[lut_ind][1] = stoi(tokens[3]);
-                        source_port = stoi(tokens[3]);
-                    }
-                    cout << "learning, system: " << LUT[lut_ind][0] << " from port: " << LUT[lut_ind][1] << endl;
-                }
-                if(port == -1) {
-                    broadcast(message, switch_num, stoi(ports_num), source_port);
-                    cout << "switch " << switch_num << " broadcasted the frame!" << endl;
                 }
                 else {
-                    string sending_pipe = "./switch_" + to_string(switch_number) + "_port_" + to_string(port) + ".pipe";
-                    write_on_pipe(sending_pipe, message);
-                    cout << "switch "<< switch_num << "sent the frame to the system " << destination << " with port " << port; 
-                }
+                    message = read_message_from_pipe(fd);
+                    vector <string> frame = tokenize(message);
+                    string destination = frame[1];
+                    string source = frame[0];
+                    int port = search_LUT(LUT, destination);
+                    int source_port;
+                    if(search_LUT(LUT,source) == -1) {
+                        vector <string> tokens;
+                        stringstream check(reading_list[i]);
+                        string ss;
+                        while(getline(check, ss, '_'))
+                        {
+                            tokens.push_back(ss);
+                        }
 
+                        LUT[lut_ind][0] = stoi(source);
+                        if(tokens[0] == "./system") {
+                            LUT[lut_ind][1] = stoi(tokens[5]);
+                            source_port = stoi(tokens[5]);
+                        }
+                        else{
+                            string w_port = search_writings(writing_list, tokens[1]);
+                            LUT[lut_ind][1] = w_port[0] - 48;
+                            source_port = stoi(tokens[3]);
+                        }
+                        cout << "learning, system: " << LUT[lut_ind][0] << " from port: " << LUT[lut_ind][1] << endl;
+                        lut_ind++;
+                    }
+                    if(port == -1) {
+                        broadcast(message, switch_num, stoi(ports_num), source_port);
+                        cout << "switch " << switch_num << " broadcasted the frame!" << endl;
+                    }
+                    else {
+                        string sending_pipe = "./switch_" + to_string(switch_number) + "_port_" + to_string(port) + ".pipe";
+                        write_on_pipe(sending_pipe, message);
+                        cout << "switch "<< switch_num << " sent the frame to the system " << destination << " with port " << port << endl; 
+                    }
+                }
             }
             close(fd);
         }

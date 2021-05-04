@@ -38,6 +38,7 @@ public:
     void connect_switches(int switch1, int port1, int switch2, int port2);
     void write_on_pipe(std::string system_pipe, std::string message);
     void send(std::string file_path, std::string source, std::string destination);
+    void receive(std::string destination, std::string file, std::string source);
     int find_switch(int switch_num);
     bool find_system(int system_num);
     bool check_arguments_num(int vector_size, int correct_num);

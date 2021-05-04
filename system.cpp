@@ -111,10 +111,18 @@ int main(int argc, char **argv) {
                 }
                 cout << "system " << system_num << " sent all the frames to system " << destination << endl;
             }
+            else if(command_tokens[0] == "RECIEVE") {
+                string source_pipe = "./manager_system_" + command_tokens[2] + ".pipe";
+                string message = "SEND " + command_tokens[1]  + " " + system_num;
+                write_on_pipe(source_pipe, message);
+                cout << "Message to " << source_pipe << " : " << message << "\n";
+            }
+            close(manager);
         }
         else if(FD_ISSET(switch_p, &rfds)) {
             string message = read_message_from_pipe(switch_p);
             char source = message[0];
+            if(message[2] != system_num[0]) continue;
             string file_name = "./system_"+ system_num + "_output_" + to_string(output_num) + ".txt";
             fstream output;
             if(message[message.size() - 1] == '1') {
@@ -133,9 +141,9 @@ int main(int argc, char **argv) {
                 output.write((char*) message.c_str(),message.size());
                 output.close();
             }
-
+            close(switch_p);
         }
-        close(manager);
+        
     }
     return 0;
 }
