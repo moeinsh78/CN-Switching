@@ -81,7 +81,7 @@ int main(int argc, char **argv) {
 
     fd_set rfds;
     int lut_ind = 0;
-
+    int f_test = 0;
     while (1) {
         vector<string> new_files;
         vector<int> open_files;
@@ -129,6 +129,7 @@ int main(int argc, char **argv) {
                     }
                 }
                 else {
+                    f_test++;
                     message = read_message_from_pipe(fd);
                     vector <string> frame = tokenize(message);
                     string destination = frame[1];
@@ -152,9 +153,9 @@ int main(int argc, char **argv) {
                         else{
                             string w_port = search_writings(writing_list, tokens[1]);
                             LUT[lut_ind][1] = w_port[0] - 48;
-                            source_port = stoi(tokens[3]);
+                            source_port = LUT[lut_ind][1];
                         }
-                        cout << "learning, system: " << LUT[lut_ind][0] << " from port: " << LUT[lut_ind][1] << endl;
+                        cout << "learning, system: " << LUT[lut_ind][0] << " from port: " << source_port << endl;
                         lut_ind++;
                     }
                     if(port == -1) {
