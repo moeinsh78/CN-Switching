@@ -14,18 +14,23 @@
 #include <sys/stat.h> 
 #include <sys/wait.h> 
 
+#define INF 10000
+
 typedef struct 
 {
+    int key_value;
     int switch_number;
     int number_of_ports;
-    std::string pipe_path;
 } Switch;
 
 typedef struct 
 {
-    int system_number;
-    std::string pipe_path;
-} System;
+    int switch1;
+    int switch2;
+    int port1;
+    int port2;
+    bool enable;
+} SwitchConnection;
 
 class NetworkManager 
 {
@@ -39,14 +44,21 @@ public:
     void write_on_pipe(std::string system_pipe, std::string message);
     void send(std::string file_path, std::string source, std::string destination);
     void receive(std::string destination, std::string file, std::string source);
+    void disable_switch_connection(SwitchConnection connection);
+    void make_spanning_tree();
+    void initialize_root();
+    void update_key_values(int new_switch, std::vector<int> st_set);
+    void enable_connection(int first_switch, int second_switch);
+    int find_new_node(std::vector<int> st_set, int *parent_node);
+    bool not_in_set(int key, std::vector<int> st_set);
     int find_switch(int switch_num);
     bool find_system(int system_num);
     bool check_arguments_num(int vector_size, int correct_num);
     bool check_port_availability(int switch_num, int port_num);
 private:
     std::vector<Switch> switches;    
-    std::vector<System> systems;
-    // std::vector< std::vector<int> > switch_connections;
+    std::vector<int> systems;
+    std::vector< SwitchConnection > switch_connections;
     std::vector< std::vector<int> > connected_ports;
 };
 

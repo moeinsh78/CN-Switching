@@ -111,7 +111,7 @@ int main(int argc, char **argv) {
                 }
                 cout << "system " << system_num << " sent all the frames to system " << destination << endl;
             }
-            else if(command_tokens[0] == "RECIEVE") {
+            else if(command_tokens[0] == "RECEIVE") {
                 string source_pipe = "./manager_system_" + command_tokens[2] + ".pipe";
                 string message = "SEND " + command_tokens[1]  + " " + system_num;
                 write_on_pipe(source_pipe, message);
@@ -131,7 +131,7 @@ int main(int argc, char **argv) {
                 message.erase(message.size() - 2,2);
                 output.write((char*) message.c_str(),message.size());
                 output.close();
-                cout << "system " << system_num << " recieved all the frames from system " << source << endl;
+                cout << "system " << system_num << " received all the frames from system " << source << endl;
                 output_num++;
             }
             if(message[message.size() - 1] == '0') {

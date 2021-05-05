@@ -127,6 +127,9 @@ int main(int argc, char **argv) {
                         writing_list.push_back(row);
                         cout << "Pipe created with name: " << reading_pipe_name << endl;
                     }
+                    if (command_tokens[0] == "DISCONNECT") {
+                        
+                    }
                 }
                 else {
                     f_test++;

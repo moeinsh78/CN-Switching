@@ -15,7 +15,7 @@ bool NetworkManager::check_arguments_num(int vector_size, int correct_num) {
 
 bool NetworkManager::find_system(int system_num) {
     for(int i = 0; i < systems.size(); i++)
-        if (systems[i].system_number == system_num)
+        if (systems[i] == system_num)
             return true;
 
     return false;
@@ -134,24 +134,28 @@ void NetworkManager::execute_command(string command) {
         
         int source = stoi(command_tokens[2]);
         int destination = stoi(command_tokens[3]);
-        bool source_found = false;
-        bool destination_found = false;
 
-        for(int i = 0; i < systems.size(); i++) {
-            if (systems[i].system_number == source)
-                source_found = true;
-            if (systems[i].system_number == destination)
-                destination_found = true;
-        }
-
-        if(!(source_found && destination_found)) {
+        if(!(find_system(source) && find_system(destination))) {
             cout << "No systems found with the entered number!\n";
             return;
         }
         send(command_tokens[1], command_tokens[2], command_tokens[3]);
     }
     else if (command_tokens[0] == "receive") {
+        if(!check_arguments_num(command_tokens.size(), 3))
+            return;
+        
+        int destination = stoi(command_tokens[1]);
+        int source = stoi(command_tokens[3]);
+
+        if(!(find_system(source) && find_system(destination))) {
+            cout << "No systems found with the entered number!\n";
+            return;
+        }
         receive(command_tokens[1], command_tokens[2], command_tokens[3]);
+    }
+    else if (command_tokens[0] == "spanningtree") {
+        make_spanning_tree();
     }
     else {
         cout << "Command not found!\n";
@@ -201,10 +205,19 @@ void NetworkManager::connect_switches(int switch1, int port1, int switch2, int p
     string message2 = "CONNECTED_TO_SWITCH " + second_switch_reading_pipe + " WRITE_ON_PORT " + to_string(port2);
     write_on_pipe(switch_pipe2,message2);
     cout << "Message to " << switch_pipe2 << " : " << message2 << "\n";
+    
     vector<int> first_busy_port = {switch1, port1};
     vector<int> second_busy_port = {switch2, port2};
     connected_ports.push_back(first_busy_port);
     connected_ports.push_back(second_busy_port);
+    
+    SwitchConnection new_connection = SwitchConnection();
+    new_connection.enable = false;
+    new_connection.switch1 = switch1; 
+    new_connection.switch2 = switch2;
+    new_connection.port1 = port1; 
+    new_connection.port2 = port2;
+    switch_connections.push_back(new_connection);
 	return;
 }
 
@@ -218,7 +231,7 @@ void NetworkManager::send(string file_path, string source, string destination) {
 
 void NetworkManager::receive(string destination, string file, string source) {
     string source_pipe = "./manager_system_" + destination + ".pipe";
-    string message = "RECIEVE " + file  + " " + source;
+    string message = "RECEIVE " + file  + " " + source;
     write_on_pipe(source_pipe, message);
     cout << "Message to " << source_pipe << " : " << message << "\n";
     return;
@@ -232,8 +245,8 @@ void NetworkManager::create_switch(int switch_num, int num_of_ports) {
 
     new_switch_info.number_of_ports = num_of_ports;
     new_switch_info.switch_number = switch_num;
-    new_switch_info.pipe_path = pipe_name.c_str();
-    
+    new_switch_info.key_value = INF;
+
     switches.push_back(new_switch_info);
     pid_t switch_pid;
     switch_pid = fork();
@@ -256,26 +269,14 @@ void NetworkManager::create_switch(int switch_num, int num_of_ports) {
         execv("./switch.out", argv);
         exit(0);
     }
-    else if(switch_pid > 0) {
-        // inja bayad ettelaat ro az named pipe e switch bekhunimo estefade konim
-        // ya inke tush chizi benevisim
-
-        // wait(NULL);
-
-    }
     return;
 }
 
 void NetworkManager::create_system(int system_num) {
-    System new_system_info = System();
-
     string pipe_name = "./manager_system_" + to_string(system_num) + ".pipe";
     mkfifo(pipe_name.c_str(), 0666);
-    
-    new_system_info.system_number = system_num;
-    new_system_info.pipe_path = pipe_name;
-
-    systems.push_back(new_system_info);
+        
+    systems.push_back(system_num);
 
     pid_t system_pid;
     system_pid = fork();
@@ -292,12 +293,107 @@ void NetworkManager::create_system(int system_num) {
         execv("./system.out", argv);
         exit(0);
     }
-    else if(system_pid > 0) {
-        // inja bayad ettelaat ro az named pipe e system bekhunimo estefade konim
-        // ya inke tush chizi benevisim
+    return;
+}
 
-        // wait(NULL);
+void NetworkManager::disable_switch_connection(SwitchConnection connection) {
+    string switch1_manager_pipe = "./manager_switch_" + to_string(connection.switch1) + ".pipe";
+    string switch2_manager_pipe = "./manager_switch_" + to_string(connection.switch2) + ".pipe";
+
+    string switch1_reading_pipe = "./switch_" + to_string(connection.switch2) + "_port_" + to_string(connection.port2) + ".pipe";
+    string switch2_reading_pipe = "./switch_" + to_string(connection.switch1) + "_port_" + to_string(connection.port1) + ".pipe";
+    
+    string message1 = "DISCONNECT " + switch1_reading_pipe + " " + switch2_reading_pipe;
+    string message2 = "DISCONNECT " + switch2_reading_pipe + " " + switch1_reading_pipe;
+
+    write_on_pipe(switch1_manager_pipe, message1);
+    write_on_pipe(switch2_manager_pipe, message2);
+    return;
+}
+
+void NetworkManager::make_spanning_tree() {
+    initialize_root();
+    vector<int> st_set;
+    while(st_set.size() < switches.size()) {
+        int parent_switch;
+        int entering_switch = find_new_node(st_set, &parent_switch);
+        cout << "New switch number: " << entering_switch << " ---- Parent switch number: " << parent_switch << "\n";
+        st_set.push_back(entering_switch);
+        if(parent_switch != 0)
+            enable_connection(parent_switch, entering_switch);
+        update_key_values(entering_switch, st_set);
     }
 
+    for (int i = 0; i < switch_connections.size(); i++) {
+        if(!switch_connections[i].enable) { 
+            disable_switch_connection(switch_connections[i]);
+            cout << "Connection between " << switch_connections[i].switch1 << " and " << switch_connections[i].switch2 << " is disabled!\n";
+        }
+    }
+    return;
+}
+
+void NetworkManager::initialize_root() {
+    int min_number = INF;
+    int min_index;
+    for (int i = 0; i < switches.size(); i++) {
+        if (switches[i].switch_number < min_number) {
+            min_index = i;
+            min_number = switches[i].switch_number;
+        }
+    }
+    switches[min_index].key_value = 0;
+    return;
+}
+
+int NetworkManager::find_new_node(vector<int> st_set, int *parent_node) {
+    int minimum_key = INF + 1;
+    int minimum_key_switch = -1;
+    for (int i = 0; i < switches.size(); i++) {
+        if(switches[i].key_value < minimum_key && not_in_set(switches[i].switch_number, st_set)) {
+            minimum_key = switches[i].key_value;
+            minimum_key_switch = switches[i].switch_number;
+        }
+    }
+    *parent_node = minimum_key;
+    return minimum_key_switch;
+}
+
+bool NetworkManager::not_in_set(int key, vector<int> st_set) {
+    for(int i = 0; i < st_set.size(); i++) 
+        if (st_set[i] == key)
+            return false;
+    return true;
+}
+
+void NetworkManager::enable_connection(int first_switch, int second_switch) {
+    for(int i = 0; i < switch_connections.size(); i++) {
+        if ((switch_connections[i].switch1 == first_switch && switch_connections[i].switch2 == second_switch) || 
+            (switch_connections[i].switch2 == first_switch && switch_connections[i].switch1 == second_switch) ) {
+                
+            switch_connections[i].enable = true;
+            return;
+        }
+    }
+    return;
+}
+
+void NetworkManager::update_key_values(int new_switch, vector<int> st_set) {
+    for(int i = 0; i < switch_connections.size(); i++) {
+        if(switch_connections[i].switch1 == new_switch && not_in_set(switch_connections[i].switch2, st_set)) {
+            for(int j = 0; j < switches.size(); j++) 
+                if (switches[j].switch_number == switch_connections[i].switch2 && switches[j].key_value > new_switch) {
+                    switches[j].key_value = new_switch;
+                    break;
+                }
+        }
+        else if(switch_connections[i].switch2 == new_switch && not_in_set(switch_connections[i].switch1, st_set)) {
+            for(int j = 0; j < switches.size(); j++) 
+                if (switches[j].switch_number == switch_connections[i].switch1 && switches[j].key_value > new_switch) {
+                    switches[j].key_value = new_switch;
+                    break;
+                }
+        }
+    }
     return;
 }
