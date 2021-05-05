@@ -152,7 +152,7 @@ int main(int argc, char **argv) {
                         }
                         else{
                             string w_port = search_writings(writing_list, tokens[1]);
-                            LUT[lut_ind][1] = w_port[0] - 48;
+                            LUT[lut_ind][1] = stoi(w_port);
                             source_port = LUT[lut_ind][1];
                         }
                         cout << "learning, system: " << LUT[lut_ind][0] << " from port: " << source_port << endl;
